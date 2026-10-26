@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SlideKampus</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pptxgenjs/3.12.0/pptxgen.bundle.js"></script>
+<style>
+  :root {
+    --bg: #f5f7f4;
+    --surface: #ffffff;
+    --fg: #14231c;
+    --muted: #5d6f66;
+    --line: #dbe3de;
+    --accent: #0f6b4f;
+    --accent-fg: #ffffff;
+    --slide-bg: #0f3d2e;
+    --slide-fg: #f3f7f4;
+    --font-display: "Bricolage Grotesque", "Segoe UI", sans-serif;
+    --font-body: "Plus Jakarta Sans", "Segoe UI", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0e1713; --surface: #16231d; --fg: #e8efeb; --muted: #93a79c;
+      --line: #263a31; --accent: #3fbf93; --accent-fg: #06150f;
+      --slide-bg: #0b2a20; --slide-fg: #f3f7f4; color-scheme: dark;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg);
+    font-family: var(--font-body); font-size: 15px; line-height: 1.55;
+  }
+  .wrap {
+    max-width: 1100px; margin: 0 auto; padding-block: 28px 48px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  header h1 { font-family: var(--font-display); font-weight: 800; font-size: 2rem; margin: 0; letter-spacing: -0.02em; }
+  header p { margin: 4px 0 0; color: var(--muted); }
+  .grid { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 28px; margin-top: 28px; align-items: start; }
+  @media (max-width: 800px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+  .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 18px; display: flex; flex-direction: column; gap: 14px; }
+  label { font-weight: 600; font-size: 13px; display: block; margin-bottom: 6px; }
+  textarea, select, input[type=number] {
+    width: 100%; font: inherit; color: var(--fg); background: var(--bg);
+    border: 1px solid var(--line); border-radius: 6px; padding: 10px;
+  }
+  textarea { min-height: 96px; resize: vertical; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  button {
+    font: inherit; font-weight: 600; cursor: pointer; border-radius: 6px;
+    padding: 11px 14px; border: 1px solid var(--accent);
+    background: var(--accent); color: var(--accent-fg);
+  }
+  button.ghost { background: transparent; color: var(--accent); }
+  button:disabled { opacity: .55; cursor: wait; }
+  .status { font-size: 13px; color: var(--muted); min-height: 1.4em; }
+  .status.err { color: #b3261e; }
+  .slides { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+  .empty { border: 1px dashed var(--line); border-radius: 10px; padding: 36px 20px; color: var(--muted); text-align: center; }
+  .slide {
+    aspect-ratio: 16 / 9; background: var(--slide-bg); color: var(--slide-fg);
+    border-radius: 6px; padding: 14px 16px; overflow: hidden; position: relative;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .slide h3 { font-family: var(--font-display); font-size: 15px; margin: 0; line-height: 1.2; }
+  .slide ul { margin: 0; padding-left: 16px; font-size: 11px; line-height: 1.4; }
+  .slide.cover { justify-content: center; }
+  .slide.cover h3 { font-size: 21px; }
+  .slide .n { position: absolute; right: 10px; bottom: 6px; font-size: 10px; opacity: .6; }
+  .bar { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+  .bar strong { font-family: var(--font-display); font-size: 1.1rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>SlideKampus</h1>
+    <p>Tulis topik, dapat slide, ekspor ke PowerPoint. Tanpa langganan.</p>
+  </header>
+
+  <div class="grid">
+    <form class="panel" id="form">
+      <div>
+        <label for="topic">Topik presentasi</label>
+        <textarea id="topic" required>Kepemimpinan kepala madrasah dalam meningkatkan mutu pendidikan</textarea>
+      </div>
+      <div>
+        <label for="count">Jumlah slide</label>
+        <input type="number" id="count" min="4" max="15" value="8">
+      </div>
+      <div>
+        <label for="style">Gaya isi</label>
+        <select id="style">
+          <option value="akademik">Akademik (tugas kuliah)</option>
+          <option value="ringkas">Ringkas dan padat</option>
+          <option value="persuasif">Persuasif (pitch, kampanye)</option>
+        </select>
+      </div>
+      <button type="submit" id="go">Buat slide</button>
+      <div class="status" id="status" role="status"></div>
+    </form>
+
+    <section>
+      <div class="bar">
+        <strong id="deckTitle">Pratinjau</strong>
+        <button class="ghost" id="export" disabled>Ekspor .pptx</button>
+      </div>
+      <div id="slides" class="slides">
+        <div class="empty">Slide muncul di sini setelah dibuat.</div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script>
+  let deck = null;
+  const $ = (id) => document.getElementById(id);
+
+  function demoDeck(topic, count) {
+    const base = [
+      { title: "Latar Belakang", bullets: ["Konteks dan alasan topik penting dibahas", "Masalah utama yang dihadapi di lapangan", "Tujuan pembahasan"] },
+      { title: "Konsep Dasar", bullets: ["Pengertian dan ruang lingkup", "Prinsip utama", "Landasan teori yang relevan"] },
+      { title: "Pembahasan", bullets: ["Faktor pendukung", "Faktor penghambat", "Contoh penerapan"] },
+      { title: "Strategi dan Solusi", bullets: ["Langkah praktis yang dapat dilakukan", "Peran pihak terkait", "Indikator keberhasilan"] },
+      { title: "Studi Kasus", bullets: ["Gambaran singkat kasus", "Analisis", "Pelajaran yang diambil"] },
+      { title: "Tantangan ke Depan", bullets: ["Hambatan yang mungkin muncul", "Peluang pengembangan"] },
+      { title: "Kesimpulan", bullets: ["Poin inti pembahasan", "Rekomendasi", "Penutup"] },
+    ];
+    return {
+      title: topic,
+      slides: base.slice(0, Math.max(3, count - 2)).map(s => ({ ...s, notes: "" })),
+      demo: true
+    };
+  }
+
+  function render() {
+    const box = $("slides");
+    box.innerHTML = "";
+    const cover = document.createElement("div");
+    cover.className = "slide cover";
+    cover.innerHTML = `<h3></h3><ul style="list-style:none;padding:0"><li>Pratinjau judul</li></ul>`;
+    cover.querySelector("h3").textContent = deck.title;
+    box.appendChild(cover);
+    deck.slides.forEach((s, i) => {
+      const el = document.createElement("div");
+      el.className = "slide";
+      const h = document.createElement("h3"); h.textContent = s.title;
+      const ul = document.createElement("ul");
+      s.bullets.forEach(b => { const li = document.createElement("li"); li.textContent = b; ul.appendChild(li); });
+      const n = document.createElement("span"); n.className = "n"; n.textContent = i + 2;
+      el.append(h, ul, n);
+      box.appendChild(el);
+    });
+    $("deckTitle").textContent = deck.title;
+    $("export").disabled = false;
+  }
+
+  $("form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const topic = $("topic").value.trim();
+    const count = Math.min(15, Math.max(4, parseInt($("count").value, 10) || 8));
+    const style = $("style").value;
+    const st = $("status"); st.className = "status"; st.textContent = "Membuat slide...";
+    $("go").disabled = true;
+    try {
+      const r = await fetch("/api/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ topic, count, style })
+      });
+      if
+      
